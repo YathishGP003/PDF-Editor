@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF to Web Editor</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <!-- Main Header -->
+    <header class="main-header">
+      <div class="header-content">
+        <a href="/" class="logo">
+          <i class="fas fa-file-pdf"></i>
+          <h1>PDF Editor Pro</h1>
+        </a>
+
+        <nav class="nav-menu">
+          <a href="/" class="active">
+            <i class="fas fa-home"></i>
+            Home
+          </a>
+          <a href="#features">
+            <i class="fas fa-star"></i>
+            Features
+          </a>
+          <a href="#contact">
+            <i class="fas fa-envelope"></i>
+            Contact
+          </a>
+          <button class="header-btn">
+            <i class="fas fa-rocket"></i>
+            Get Started
+          </button>
+        </nav>
+      </div>
+    </header>
+
+    <div class="container">
+      <header>
+        <h1>Transform Your PDFs</h1>
+        <p>Edit, customize, and export your PDF documents with ease</p>
+      </header>
+
+      <main>
+        <div class="upload-container">
+          <div class="file-type-icon">
+            <i class="fas fa-file-pdf"></i>
+          </div>
+
+          <form action="/upload" method="post" enctype="multipart/form-data">
+            <div class="file-upload">
+              <label for="pdfFile" class="custom-file-upload">
+                <i class="fas fa-cloud-upload-alt"></i>
+                Choose a PDF file
+              </label>
+              <input
+                type="file"
+                id="pdfFile"
+                name="pdfFile"
+                accept="application/pdf"
+                required
+                style="display: none"
+              />
+              <p class="file-name">No file chosen</p>
+            </div>
+
+            <div class="upload-animation">
+              <div class="upload-progress">
+                <div class="progress-bar"></div>
+              </div>
+            </div>
+
+            <div class="success-checkmark">
+              <i class="fas fa-check-circle"></i>
+            </div>
+
+            <button type="submit" class="btn-primary">
+              <i class="fas fa-edit"></i>
+              Upload & Edit
+            </button>
+          </form>
+        </div>
+
+        <div class="features" id="features">
+          <div class="feature">
+            <div class="feature-icon">
+              <i class="fas fa-upload"></i>
+            </div>
+            <h3>Upload PDF</h3>
+            <p>Quick and secure PDF upload process</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <i class="fas fa-edit"></i>
+            </div>
+            <h3>Edit Content</h3>
+            <p>Powerful editing tools at your fingertips</p>
+          </div>
+          <div class="feature">
+            <div class="feature-icon">
+              <i class="fas fa-download"></i>
+            </div>
+            <h3>Export PDF</h3>
+            <p>Save your changes in perfect quality</p>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Enhanced Footer -->
+    <footer class="main-footer">
+      <div class="footer-content">
+        <div class="footer-section">
+          <h3>About Us</h3>
+          <p>
+            We provide professional PDF editing solutions for all your document
+            needs. Transform, edit, and enhance your PDFs with our powerful
+            tools.
+          </p>
+        </div>
+
+        <div class="footer-section">
+          <h3>Quick Links</h3>
+          <ul>
+            <li><a href="/">Home</a></li>
+            <li><a href="#features">Features</a></li>
+            <li><a href="#contact">Contact</a></li>
+            <li><a href="#">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        <div class="footer-section" id="contact">
+          <h3>Contact Us</h3>
+          <ul>
+            <li><i class="fas fa-envelope"></i> support@gmail.com</li>
+            <li><i class="fas fa-phone"></i> +91-123-456-7890</li>
+            <li>
+              <i class="fas fa-map-marker-alt"></i> Mandya, Karnataka, India
+            </li>
+          </ul>
+          <div class="social-links">
+            <a href="#"><i class="fab fa-facebook"></i></a>
+            <a href="#"><i class="fab fa-twitter"></i></a>
+            <a href="#"><i class="fab fa-linkedin"></i></a>
+            <a href="#"><i class="fab fa-github"></i></a>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer-bottom">
+        <p>&copy; 2025 PDF Editor Pro. All rights reserved.</p>
+      </div>
+    </footer>
+
+    <script>
+      document
+        .getElementById("pdfFile")
+        .addEventListener("change", function () {
+          const fileName = this.files[0]
+            ? this.files[0].name
+            : "No file chosen";
+          document.querySelector(".file-name").textContent = fileName;
+
+          // Animate file icon
+          const fileIcon = document.querySelector(".file-type-icon");
+          fileIcon.style.animation = "bounce 1s";
+          setTimeout(() => {
+            fileIcon.style.animation = "float 3s ease-in-out infinite";
+          }, 1000);
+        });
+
+      document.querySelector("form").addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const uploadAnimation = document.querySelector(".upload-animation");
+        const progressBar = document.querySelector(".progress-bar");
+        const submitButton = document.querySelector(".btn-primary");
+        const successCheckmark = document.querySelector(".success-checkmark");
+
+        // Show upload animation
+        uploadAnimation.classList.add("active");
+        submitButton.style.display = "none";
+
+        // Simulate upload progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 1;
+          progressBar.style.width = `${progress}%`;
+
+          if (progress >= 100) {
+            clearInterval(interval);
+            uploadAnimation.style.display = "none";
+            successCheckmark.style.display = "block";
+
+            // Submit the form after animation
+            setTimeout(() => {
+              this.submit();
+            }, 1000);
+          }
+        }, 30);
+      });
+
+      // Enhanced hover effects for social links
+      document.querySelectorAll(".social-links a").forEach((link) => {
+        link.addEventListener("mouseenter", function () {
+          this.style.transform = "translateY(-5px) rotate(360deg)";
+        });
+
+        link.addEventListener("mouseleave", function () {
+          this.style.transform = "translateY(0) rotate(0deg)";
+        });
+      });
+
+      // Smooth scroll for anchor links
+      document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener("click", function (e) {
+          e.preventDefault();
+          document.querySelector(this.getAttribute("href")).scrollIntoView({
+            behavior: "smooth",
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

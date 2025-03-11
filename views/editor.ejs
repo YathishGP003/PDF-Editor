@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF Editor</title>
+    <link rel="stylesheet" href="/css/style.css" />
+    <script src="/tinymce/tinymce.min.js"></script>
+  </head>
+  <body>
+    <div class="container editor-page">
+      <header>
+        <h1>PDF Editor</h1>
+        <div class="actions">
+          <button id="exportBtn" class="btn-primary">Export to PDF</button>
+          <a href="/" class="btn-secondary">Upload New PDF</a>
+        </div>
+      </header>
+
+      <main>
+        <div class="editor-container">
+          <textarea id="editor"><%= pdfContent %></textarea>
+        </div>
+      </main>
+
+      <footer>
+        <p>&copy; 2025 PDF to Web Editor</p>
+      </footer>
+    </div>
+
+    <script>
+      // Initialize TinyMCE
+      tinymce.init({
+        selector: "#editor",
+        height: 800,
+        plugins:
+          "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste help wordcount",
+        toolbar:
+          "undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
+        content_style:
+          "body { font-family: Arial, sans-serif; font-size: 14px; }",
+        setup: function (editor) {
+          editor.on("init", function () {
+            // Any initialization after editor loads
+          });
+        },
+      });
+
+      // Handle PDF export
+      document
+        .getElementById("exportBtn")
+        .addEventListener("click", async function () {
+          const content = tinymce.get("editor").getContent();
+
+          try {
+            const response = await fetch("/export", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({ content }),
+            });
+
+            if (response.ok) {
+              const blob = await response.blob();
+              const url = window.URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.style.display = "none";
+              a.href = url;
+              a.download = "edited-document.pdf";
+              document.body.appendChild(a);
+              a.click();
+              window.URL.revokeObjectURL(url);
+            } else {
+              alert("Error exporting PDF");
+            }
+          } catch (error) {
+            console.error("Export error:", error);
+            alert("Error exporting PDF");
+          }
+        });
+    </script>
+  </body>
+</html>
