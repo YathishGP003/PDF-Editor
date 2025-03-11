@@ -29,28 +29,114 @@
     </div>
 
     <script>
-      // Initialize TinyMCE
       tinymce.init({
         selector: "#editor",
         height: 800,
-        plugins:
-          "advlist autolink lists link image charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime media table paste help wordcount",
-        toolbar:
-          "undo redo | formatselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
-        content_style:
-          "body { font-family: Arial, sans-serif; font-size: 14px; }",
+        plugins: [
+          "advlist",
+          "autolink",
+          "lists",
+          "link",
+          "image",
+          "charmap",
+          "preview",
+          "anchor",
+          "searchreplace",
+          "visualblocks",
+          "code",
+          "fullscreen",
+          "insertdatetime",
+          "media",
+          "table",
+          "help",
+          "wordcount",
+          "pagebreak",
+          "noneditable",
+          "template",
+          "codesample",
+          "textpattern",
+          "imagetools",
+        ],
+        toolbar: `
+          undo redo | formatselect | bold italic underline strikethrough | 
+          alignleft aligncenter alignright alignjustify | bullist numlist outdent indent |
+          forecolor backcolor | link image media table | pagebreak | 
+          removeformat | help`,
+        content_style: `
+          .pdf-page { 
+            background: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            position: relative;
+          }
+          .pdf-content { position: absolute; }
+        `,
+        image_advtab: true,
+        file_picker_types: "image",
+        images_upload_url: "/upload-image",
+        noneditable_class: "pdf-content",
+        height: "100vh",
+        resize: true,
+        autoresize_bottom_margin: 50,
         setup: function (editor) {
           editor.on("init", function () {
-            // Any initialization after editor loads
+            // Store original formatting data
+            editor.originalFormatting = new Map();
+            document.querySelectorAll(".pdf-content").forEach((element) => {
+              editor.originalFormatting.set(element.id, {
+                style: element.style.cssText,
+                position: {
+                  x: element.offsetLeft,
+                  y: element.offsetTop,
+                },
+              });
+            });
           });
         },
       });
 
-      // Handle PDF export
+      // Handle PDF export with preserved formatting
       document
         .getElementById("exportBtn")
         .addEventListener("click", async function () {
-          const content = tinymce.get("editor").getContent();
+          const editor = tinymce.get("editor");
+          const content = [];
+
+          // Collect all elements with their formatting
+          editor
+            .getBody()
+            .querySelectorAll(".pdf-content")
+            .forEach((element) => {
+              const originalFormat = editor.originalFormatting.get(element.id);
+              content.push({
+                type: "text",
+                content: element.textContent,
+                fontFamily: window.getComputedStyle(element).fontFamily,
+                fontSize: parseInt(window.getComputedStyle(element).fontSize),
+                color: window.getComputedStyle(element).color,
+                x: originalFormat.position.x,
+                y: originalFormat.position.y,
+                width: element.offsetWidth,
+                height: element.offsetHeight,
+                lineHeight: window.getComputedStyle(element).lineHeight,
+                align: window.getComputedStyle(element).textAlign,
+              });
+            });
+
+          // Handle images
+          editor
+            .getBody()
+            .querySelectorAll("img")
+            .forEach((img) => {
+              content.push({
+                type: "image",
+                src: img.src,
+                x: img.offsetLeft,
+                y: img.offsetTop,
+                width: img.width,
+                height: img.height,
+              });
+            });
 
           try {
             const response = await fetch("/export", {
@@ -58,7 +144,10 @@
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({ content }),
+              body: JSON.stringify({
+                content: JSON.stringify(content),
+                metadata: window.pdfMetadata, // Original PDF metadata
+              }),
             });
 
             if (response.ok) {

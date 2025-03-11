@@ -52,29 +52,61 @@ app.post("/upload", upload.single("pdfFile"), async (req, res) => {
     }
 
     const filePath = req.file.path;
-    const options = {};
+    const options = {
+      // Add options to extract more PDF information
+      normalizeWhitespace: false,
+      disableCombineTextItems: false,
+    };
 
-    // Extract PDF content
+    // Extract PDF content with formatting
     const data = await pdfExtract.extract(filePath, options);
 
-    // Process the PDF data to create HTML content
+    // Process the PDF data to create HTML content with preserved formatting
     let htmlContent = "";
     data.pages.forEach((page, pageIndex) => {
-      htmlContent += `<div class="pdf-page" data-page="${pageIndex + 1}">`;
+      htmlContent += `<div class="pdf-page" data-page="${
+        pageIndex + 1
+      }" style="width: ${page.width}px; height: ${page.height}px;">`;
 
-      // Add text content
+      // Add text content with precise positioning and styling
       page.content.forEach((item) => {
-        const style = `position: absolute; left: ${item.x}px; top: ${item.y}px; font-size: ${item.fontSize}px;`;
-        htmlContent += `<div style="${style}">${item.str}</div>`;
+        const style = `
+          position: absolute;
+          left: ${item.x}px;
+          top: ${item.y}px;
+          font-family: ${item.fontName || "Arial"};
+          font-size: ${item.fontSize}px;
+          transform: scale(${item.scaleX || 1}, ${item.scaleY || 1});
+          color: rgb(${item.color?.r || 0}, ${item.color?.g || 0}, ${
+          item.color?.b || 0
+        });
+          letter-spacing: ${item.letterSpacing || "normal"};
+          line-height: ${item.lineHeight || "normal"};
+        `;
+        htmlContent += `<div class="pdf-content" style="${style}">${item.str}</div>`;
       });
+
+      // Handle images if present
+      if (page.images) {
+        page.images.forEach((image) => {
+          const imageStyle = `
+            position: absolute;
+            left: ${image.x}px;
+            top: ${image.y}px;
+            width: ${image.width}px;
+            height: ${image.height}px;
+          `;
+          htmlContent += `<img src="data:image/${image.format};base64,${image.data}" style="${imageStyle}" />`;
+        });
+      }
 
       htmlContent += "</div>";
     });
 
-    // Store the file information in session or pass to the editor
     res.render("editor", {
       pdfContent: htmlContent,
       originalFile: req.file.filename,
+      pdfMetadata: data.meta, // Pass metadata for preservation
     });
   } catch (error) {
     console.error("Error processing PDF:", error);
@@ -84,12 +116,13 @@ app.post("/upload", upload.single("pdfFile"), async (req, res) => {
 
 app.post("/export", async (req, res) => {
   try {
-    const { content } = req.body;
+    const { content, metadata } = req.body;
 
-    // Create a new PDF document
+    // Create a new PDF document with original page settings
     const doc = new PDFDocument({
-      margin: 50,
-      size: "A4",
+      size: [metadata.width, metadata.height],
+      margin: 0,
+      info: metadata.info,
     });
 
     // Set response headers for PDF download
@@ -102,14 +135,27 @@ app.post("/export", async (req, res) => {
     // Pipe the PDF document to the response
     doc.pipe(res);
 
-    // Add the content to the PDF
-    doc
-      .font("Helvetica")
-      .fontSize(12)
-      .text(content.replace(/<[^>]*>/g, ""), {
-        align: "left",
-        lineGap: 5,
-      });
+    // Process and add the content while preserving formatting
+    const elements = JSON.parse(content);
+    elements.forEach((element) => {
+      if (element.type === "text") {
+        doc
+          .font(element.fontFamily)
+          .fontSize(element.fontSize)
+          .fillColor(element.color)
+          .text(element.content, element.x, element.y, {
+            width: element.width,
+            height: element.height,
+            lineGap: element.lineHeight,
+            align: element.align,
+          });
+      } else if (element.type === "image") {
+        doc.image(element.src, element.x, element.y, {
+          width: element.width,
+          height: element.height,
+        });
+      }
+    });
 
     // Finalize the PDF
     doc.end();
